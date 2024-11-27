@@ -9,10 +9,21 @@ app = Flask(__name__)
 # Secret key for session management
 app.secret_key = 'your_secret_key'
 
+# Default page
+@app.route('/')
+def main():
+    return render_template('index.html')
+
 @app.after_request
 def apply_csp(response):
-    # Setting a basic CSP that only allows scripts and styles from the same origin
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+    # Allow styles and scripts from specific CDN sources
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net; "  # Allow scripts from cdn.jsdelivr.net
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "  # Allow styles from cdn.jsdelivr.net
+        "font-src 'self' https://cdn.jsdelivr.net; "  # Allow fonts from cdn.jsdelivr.net
+        "img-src 'self';"  # Allow images from the same origin (you can add other external sources if needed)
+    )
     return response
 
 # Database connection configuration
