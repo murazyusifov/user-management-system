@@ -14,14 +14,26 @@
 <body class="bg-light">
 
     <div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
-        <div class="card shadow-lg p-4" style="width: 600px;">
-            <h2 class="text-center mb-4">Welcome, {{ current_user.full_name }}</h2>
+        <div class="card shadow-lg p-4" style="width: 600px; border-radius: 10px;">
+            <h2 class="text-center mb-4" style="color: #007bff;">Hello, {{ current_user.full_name }}!</h2>
 
-            <div class="mb-3">
-                <h4>Your Dashboard</h4>
-                <p>Welcome to your dashboard, {{ current_user.username }}! Here, you can manage your profile, settings, and more.</p>
+            <div class="mb-3 text-center">
+                <h4>Welcome</h4>
+                <p class="text-muted">We're glad to have you. Enjoy your time here!</p>
             </div>
 
+            <!-- New Links Section -->
+            <div class="mb-3">
+                <h5>Want to learn more about Cyber Security?</h5>
+                <p>Check out some insightful articles on <a href="https://hematyar.net/" target="_blank" class="btn btn-link text-decoration-none">Cyber Security</a>.</p>
+            </div>
+
+            <div class="mb-3">
+                <h5>Feeling hungry?</h5>
+                <p>Order a delicious chicken from <a href="https://www.rafaaz.com/" target="_blank" class="btn btn-link text-decoration-none">Rafaaz</a> and satisfy your cravings!</p>
+            </div>
+
+            <!-- Logout Button -->
             <div class="mb-3">
                 <a href="{{ url_for('logout') }}" class="btn btn-danger w-100">Logout</a>
             </div>
