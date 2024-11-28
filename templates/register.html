@@ -62,7 +62,9 @@
                 {% endif %}
             {% endwith %}
 
-            <form id="registration-form" action="{{ url_for('register') }}" method="POST">
+            <!-- Registration Form -->
+            <form id="registration-form" action="{{ url_for('register') }}" method="POST" onsubmit="return validatePassword();">
+
                 <!-- Username Field -->
                 <div class="mb-3">
                     <label for="username" class="form-label">Username</label>
@@ -73,6 +75,12 @@
                 <div class="mb-3">
                     <label for="full_name" class="form-label">Full Name</label>
                     <input type="text" id="full_name" name="full_name" class="form-control" required>
+                </div>
+
+                <!-- Email Field -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
                 </div>
 
                 <!-- Password Field with Visibility Toggle -->
@@ -111,6 +119,25 @@
 
     <!-- External JavaScript for Password Visibility Toggle -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <script>
+        // Flash message fade-out after 5 seconds
+        document.addEventListener("DOMContentLoaded", function() {
+        const flashMessage = document.getElementById("flashMessage");
+        if (flashMessage) {
+            setTimeout(function() {
+                // Add fade-out class for opacity transition
+                flashMessage.classList.add("fade-out");
+
+                // After 1 second (the duration of the fade-out transition), remove the flash message from the DOM
+                setTimeout(function() {
+                    flashMessage.remove();
+                }, 1000);  // 1000ms matches the CSS transition duration
+            }, 5000);  // Wait 5 seconds before starting the fade-out
+        }
+    });
+
+    </script>
 
 </body>
 
