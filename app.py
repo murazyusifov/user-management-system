@@ -22,7 +22,6 @@ app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access
 app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # Prevent CSRF
 
-
 # Setup Flask-Login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -219,7 +218,175 @@ def main():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    if current_user.role_type == 'admin':
+        return redirect(url_for('admin_dashboard'))
     return render_template('dashboard.html')
+
+# Admin Dashboard route - only accessible to admins
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    if current_user.role_type != 'admin':
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Fetch all users from the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, full_name, email, role_type FROM users")
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # Render the admin dashboard with the users data
+    return render_template('admin.html', users=users)
+
+# Create a new user - only accessible to admins
+# Create a new user - only accessible to admins
+@app.route('/admin/create_user', methods=['POST'])
+@login_required
+def create_user():
+    if current_user.role_type != 'admin':
+        flash('You do not have permission to create new users.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    # Get form data
+    username = request.form['username']
+    full_name = request.form['full_name']
+    email = request.form['email']
+    password = request.form['password']
+    # password_confirmation = request.form['password_confirmation']
+
+    # Validate inputs
+    if not is_valid_username(username):
+        flash('Username must be between 3 and 20 characters, and can only contain letters, numbers, and underscores.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if not is_valid_password(password):
+        flash('Password must be at least 8 characters long and contain an uppercase letter, a lowercase letter, a number, and a special character.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if not is_valid_full_name(full_name):
+        flash('Full name must be between 3 and 50 characters and can only contain alphabetic characters and spaces.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if not is_valid_email(email):
+        flash('Invalid email address format. Please enter a valid email.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+
+    # Hash the password
+    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if username or email already exists
+        cursor.execute("SELECT * FROM users WHERE username = %s OR email = %s", (username, email))
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            flash('Username or Email already exists. Please choose a different one.', 'danger')
+            return redirect(url_for('admin_dashboard'))
+
+        # Insert the new user into the database with 'user' role
+        cursor.execute(
+            "INSERT INTO users (username, full_name, email, password_hash, role_type) VALUES (%s, %s, %s, %s, 'user')",
+            (username, full_name, email, password_hash)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash('New user created successfully!', 'success')
+
+    except Error as e:
+        flash(f'Error creating user: {e}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+
+# Edit user - only accessible to admins
+# Edit user - only accessible to admins
+@app.route('/admin/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    if current_user.role_type != 'admin':
+        flash('You do not have permission to edit users.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    # Fetch the user from the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, full_name, email FROM users WHERE id = %s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if request.method == 'POST':
+        # Handle form submission for updating user
+        username = request.form['username']
+        full_name = request.form['full_name']
+        email = request.form['email']
+
+        # Validate inputs
+        if not is_valid_username(username):
+            flash('Username must be between 3 and 20 characters, and can only contain letters, numbers, and underscores.', 'danger')
+            return redirect(url_for('edit_user', user_id=user_id))
+
+        if not is_valid_full_name(full_name):
+            flash('Full name must be between 3 and 50 characters and can only contain alphabetic characters and spaces.', 'danger')
+            return redirect(url_for('edit_user', user_id=user_id))
+
+        if not is_valid_email(email):
+            flash('Invalid email address format. Please enter a valid email.', 'danger')
+            return redirect(url_for('edit_user', user_id=user_id))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET username = %s, full_name = %s, email = %s WHERE id = %s",
+                (username, full_name, email, user_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            flash('User updated successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Error as e:
+            flash(f'Error updating user: {e}', 'danger')
+
+    return render_template('edit_user.html', user=user)
+
+# Delete user - only accessible to admins
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if current_user.role_type != 'admin':
+        flash('You do not have permission to delete users.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash('User deleted successfully!', 'success')
+    except Error as e:
+        flash(f'Error deleting user: {e}', 'danger')
+
+    return redirect(url_for('admin_dashboard'))
 
 # Logout route
 @app.route('/logout')
