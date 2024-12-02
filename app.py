@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # Secret key for session management (ensure it's a strong, secure key)
-app.secret_key = 'your_secret_key'  # Replace with a secure key
+app.secret_key = 'very_very_secure_key'  # Replace with a secure key
 
 # Session security configurations
 app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
