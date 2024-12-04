@@ -8,8 +8,24 @@ from datetime import timedelta
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
+import logging
+from logging.handlers import RotatingFileHandler
+
+log_file = 'app.log'  # Log file name
+log_handler = RotatingFileHandler(log_file, maxBytes=10000000, backupCount=3)  # File size limit 10MB
+log_handler.setLevel(logging.INFO)  # You can use logging.DEBUG, logging.INFO, logging.ERROR, etc.
+
+# Set the log format
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+log_handler.setFormatter(formatter)
 
 app = Flask(__name__)
+
+# Add the handler to the Flask app logger
+app.logger.addHandler(log_handler)
+
+# You can also log SQL queries, etc.
+app.logger.setLevel(logging.INFO)
 
 # Configure the session lifetime (for example, 30 minutes)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -79,9 +95,11 @@ def is_valid_email(email):
     # Simple email validation regex
     return bool(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email))
 
+
 # Rate limiting decorator for the registration and login routes
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    app.logger.info('Register page accessed')
     if request.method == 'POST':
         username = request.form['username']
         full_name = request.form['full_name']
@@ -156,6 +174,7 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")  # Limit to 5 requests per minute
 def login():
+    app.logger.info('Login page accessed')
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -212,12 +231,14 @@ def rate_limit_error(e):
 # Main route (Home Page) - only accessible to logged-in users
 @app.route('/')
 def main():
+    app.logger.info('Application started!')
     return render_template('index.html')
 
 # Dashboard route - only accessible to logged-in users
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    app.logger.info('Dashboard page accessed')
     if current_user.role_type == 'admin':
         return redirect(url_for('admin_dashboard'))
     return render_template('dashboard.html')
@@ -226,6 +247,7 @@ def dashboard():
 @app.route('/admin')
 @login_required
 def admin_dashboard():
+    app.logger.info('Admin page accessed')
     if current_user.role_type != 'admin':
         flash('You do not have permission to access this page.', 'danger')
         return redirect(url_for('dashboard'))
@@ -301,6 +323,7 @@ def create_user():
         conn.close()
 
         flash('New user created successfully!', 'success')
+        app.logger.info('New user is created')
 
     except Error as e:
         flash(f'Error creating user: {e}', 'danger')
@@ -360,6 +383,7 @@ def edit_user(user_id):
             conn.close()
 
             flash('User updated successfully!', 'success')
+            app.logger.info('User information has been updated')
             return redirect(url_for('admin_dashboard'))
         except Error as e:
             flash(f'Error updating user: {e}', 'danger')
@@ -383,6 +407,7 @@ def delete_user(user_id):
         conn.close()
 
         flash('User deleted successfully!', 'success')
+        app.logger.info('User is deleted')
     except Error as e:
         flash(f'Error deleting user: {e}', 'danger')
 
