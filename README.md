@@ -61,39 +61,27 @@ This is a Flask-based web application that provides user authentication features
    ```
 
 2. Create log file
-```bash
-add app.log file
-```
+    ```bash
+    add app.log file
+    ```
 
 3. Configure database settings
-```bash
-mysql -u root -p
-run code in dump.sql file
-```
+    ```bash
+    mysql -u root -p
+    run code in dump.sql file
+    ```
 
 4. Install dependencies
-```bash
-pip install flask flask-mysqldb 
-pip install bcrypt
-pip install bleach
-pip install flask-login
-pip install Flask-Limiter
-```
+    ```bash
+    pip install flask flask-mysqldb 
+    pip install bcrypt
+    pip install bleach
+    pip install flask-login
+    pip install Flask-Limiter
+    ```
 
 5. Run the application
-```bash
-python app.py
-```
-
-## File Structure
-/flask-auth-app
-├── app.py              # Main application code
-├── templates/          # HTML templates for the app
-│   ├── admin.html      # Admin dashboard template
-│   ├── dashboard.html  # Regular user dashboard template
-│   ├── index.html      # Welcoming page template
-│   ├── login.html      # Login page template
-│   └── register.html   # Registration page template
-├── requirements.txt    # Python dependencies
-└── app.log             # Application log file
+    ```bash
+    python app.py
+    ```
 
