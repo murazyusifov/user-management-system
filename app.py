@@ -175,9 +175,6 @@ def register():
 @limiter.limit("5 per minute")  # Limit to 5 requests per minute
 def login():
     app.logger.info('Login page accessed')
-    if 'failed_attempts' not in session:
-        session['failed_attempts'] = 0  # Initialize failed attempts counter
-        session['first_failed_attempt_time'] = None  # Track first failed attempt time
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -204,9 +201,6 @@ def login():
             # Verify the password using bcrypt
             if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
 
-                # Reset failed login attempts upon successful login
-                session['failed_attempts'] = 0
-
                 # Create the user object for Flask-Login
                 user = User(user_id, stored_username, stored_full_name, stored_role_type)
 
@@ -220,16 +214,6 @@ def login():
                 flash('Login successful!', 'success')
                 return redirect(url_for('dashboard'))  # Redirect to home page after successful login
             else:
-                if 'failed_attempts' not in session:
-                    session['failed_attempts'] = 0
-                    session['failed_attempts'] += 1
-
-                if session['failed_attempts'] >= 3:
-                    # Lock the user out for 5 minutes
-                    session['locked_out_until'] = datetime.now() + timedelta(minutes=5)
-                    flash('You have reached the maximum number of login attempts. Please try again after 5 minutes.', 'danger')
-                    return redirect(url_for('login'))
-                
                 flash('Incorrect password. Please try again.', 'danger')
         else:
             flash('Username not found. Please try again.', 'danger')
