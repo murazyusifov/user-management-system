@@ -31,7 +31,7 @@ app.logger.setLevel(logging.INFO)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # Secret key for session management (ensure it's a strong, secure key)
-app.secret_key = 'very_very_secure_key'  # Replace with a secure key
+app.secret_key = 'very_very_secure_key'  
 
 # Session security configurations
 app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
@@ -175,6 +175,9 @@ def register():
 @limiter.limit("5 per minute")  # Limit to 5 requests per minute
 def login():
     app.logger.info('Login page accessed')
+    if 'failed_attempts' not in session:
+        session['failed_attempts'] = 0  # Initialize failed attempts counter
+        session['first_failed_attempt_time'] = None  # Track first failed attempt time
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -201,6 +204,9 @@ def login():
             # Verify the password using bcrypt
             if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
 
+                # Reset failed login attempts upon successful login
+                session['failed_attempts'] = 0
+
                 # Create the user object for Flask-Login
                 user = User(user_id, stored_username, stored_full_name, stored_role_type)
 
@@ -214,6 +220,16 @@ def login():
                 flash('Login successful!', 'success')
                 return redirect(url_for('dashboard'))  # Redirect to home page after successful login
             else:
+                if 'failed_attempts' not in session:
+                    session['failed_attempts'] = 0
+                    session['failed_attempts'] += 1
+
+                if session['failed_attempts'] >= 3:
+                    # Lock the user out for 5 minutes
+                    session['locked_out_until'] = datetime.now() + timedelta(minutes=5)
+                    flash('You have reached the maximum number of login attempts. Please try again after 5 minutes.', 'danger')
+                    return redirect(url_for('login'))
+                
                 flash('Incorrect password. Please try again.', 'danger')
         else:
             flash('Username not found. Please try again.', 'danger')
@@ -354,14 +370,8 @@ def edit_user(user_id):
 
     if request.method == 'POST':
         # Handle form submission for updating user
-        username = request.form['username']
         full_name = request.form['full_name']
         email = request.form['email']
-
-        # Validate inputs
-        if not is_valid_username(username):
-            flash('Username must be between 3 and 20 characters, and can only contain letters, numbers, and underscores.', 'danger')
-            return redirect(url_for('edit_user', user_id=user_id))
 
         if not is_valid_full_name(full_name):
             flash('Full name must be between 3 and 50 characters and can only contain alphabetic characters and spaces.', 'danger')
@@ -375,8 +385,8 @@ def edit_user(user_id):
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE users SET username = %s, full_name = %s, email = %s WHERE id = %s",
-                (username, full_name, email, user_id)
+                "UPDATE users SET full_name = %s, email = %s WHERE id = %s",
+                (full_name, email, user_id)
             )
             conn.commit()
             cursor.close()
